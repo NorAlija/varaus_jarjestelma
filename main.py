@@ -134,8 +134,8 @@ def list_rooms() -> Dict[str, str]:
     return ROOMS  
 
 
-@app.post("/reservations", response_model=ReservationResponse, status_code=201)  # Define endpoint to create reservation.
-def create_reservation(req: ReservationCreateRequest) -> ReservationResponse:  # Accept validated reservation request.
+@app.post("/reservations", response_model=ReservationResponse, status_code=201)  
+def create_reservation(req: ReservationCreateRequest) -> ReservationResponse:  
     """
     Create a new reservation for a room.
 
@@ -143,6 +143,7 @@ def create_reservation(req: ReservationCreateRequest) -> ReservationResponse:  #
     - Validates that the requested room exists
     - Prevents overlapping reservations for the same room
     - Rejects reservations that start in the past
+    - Rejects reservations that are not placed during the ongoing year.
     - Stores all reservation times in UTC for consistency
 
     A unique reservation ID is generated and returned on success.
@@ -154,8 +155,20 @@ def create_reservation(req: ReservationCreateRequest) -> ReservationResponse:  #
     require_room_exists(req.room_id) 
 
     # Normalize times to UTC for consistent overlap checks and storage (security/consistency best practice).
+    now_utc = datetime.now(timezone.utc)
     start_utc = req.start_time.astimezone(timezone.utc)  
     end_utc = req.end_time.astimezone(timezone.utc)  
+
+    if start_utc < now_utc:
+        raise HTTPException(status_code=422, detail="Reservations cannot be placed in the past.")
+
+    current_year = now_utc.year
+    if start_utc.year != current_year or end_utc.year != current_year:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Reservations must be within the current year ({current_year}).",
+        )
+
 
     with DB_LOCK: 
         # Fetch all reservation IDs for this room.
@@ -225,8 +238,7 @@ def list_reservations_for_room(
     room_id: str = Path(..., min_length=1, max_length=32),  
     user_id: Optional[str] = None,  
 ) -> List[ReservationResponse]:
-    require_room_exists(room_id)  
-
+    
     """
     List reservations for a specific room.
 
@@ -236,6 +248,7 @@ def list_reservations_for_room(
     Raises:
         HTTPException(404): If the specified room does not exist
     """
+    require_room_exists(room_id)  
 
     with DB_LOCK:  
         res_ids = list(RESERVATION_IDS_BY_ROOM[room_id])  
