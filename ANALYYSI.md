@@ -17,7 +17,8 @@ Testauksien jälkeen lisäsin uuden toiminnalisuuden joka rajaa huoneiden varaus
 ## Omat oletukset tehtävään
 
 - Huoneita on 6  
-- Huoneen nimet: Aurora, Borealis, Helmi, Sauna, Sisu, Taiga  
+- Huoneen nimet: Aurora, Borealis, Helmi, Sauna, Sisu, Taiga
+- Varauksia voi suodattaa käyttäjän perustella. Esim voi nähdä kuka on varannut tietyn huoneen. 
 - Ajat validoidaan niiden mukana annetun aikavyöhykkeen perusteella, jotta eri maista tehtyjä varauksia voidaan tukea. Tarkistin että Vincitillä on toimipisteitä myös ulkomailla.  
 - Varauksia voi tehdä vain meneillään olevan vuoden aikana.
 
