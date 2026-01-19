@@ -726,3 +726,168 @@ Your current code is *correct*, but moving explanations into docstrings will:
 
 If you want, I can rewrite **one full section** of your file (models or routes) in “reviewer-perfect” style so you can copy the pattern for the rest.
 
+**Nori(minä):** At the moment the user can book a reservation to any time in the future, it would be more logical to restrict it only for the current year. Write me the changes for this part.
+
+**ChatGPT 5.2:**
+Add one extra validation in your `ReservationCreateRequest.validate_times()` to restrict reservations to the **current year** (based on UTC, consistent with your “no past” check).
+
+### ✅ Change: add this block after you compute `start_utc` (and optionally `end_utc`)
+
+```python
+# Enforce reservations only within the current calendar year (UTC).
+current_year = datetime.now(timezone.utc).year  # Get current year in UTC.
+if start_utc.year != current_year or self.end_time.astimezone(timezone.utc).year != current_year:  # Check both endpoints.
+    raise ValueError(f"Reservations must be within the current year ({current_year}).")  # Reject cross-year/future-year.
+```
+
+### Full updated section (only the relevant part)
+
+```python
+# Enforce "not in the past" (required business rule).
+now_utc = datetime.now(timezone.utc)  # Use server-side UTC "now" to compare safely.
+start_utc = self.start_time.astimezone(timezone.utc)  # Convert start_time to UTC.
+end_utc = self.end_time.astimezone(timezone.utc)  # Convert end_time to UTC.
+
+if start_utc < now_utc:  # Check whether the reservation starts in the past.
+    raise ValueError("Reservations cannot be placed in the past.")  # Reject past reservations.
+
+# Enforce reservations only within the current calendar year (UTC).
+current_year = now_utc.year  # Read the current year from the same 'now_utc' value.
+if start_utc.year != current_year or end_utc.year != current_year:  # Ensure both times are in current year.
+    raise ValueError(f"Reservations must be within the current year ({current_year}).")  # Reject otherwise.
+```
+
+That’s it — now bookings are only allowed if **both start and end** are within the current year, and it also blocks bookings that cross into the next year (e.g., Dec 31 → Jan 1).
+
+If you’d rather define “current year” in **Europe/Helsinki local time** instead of UTC, tell me and I’ll adjust it cleanly.
+
+**Nori(minä):** Provide me the curl commands to test this new functionality.
+**ChatGPT 5.2:**
+Got it — here are **copy-paste ready `curl` commands** to test the **current-year restriction**.
+I’ll assume:
+
+* Server: `http://127.0.0.1:8000`
+* Room: `aurora`
+* **Current year = 2026**
+  (If your current year is different, adjust the year in the commands accordingly.)
+
+---
+
+## ✅ 1️⃣ Valid reservation (current year → SHOULD SUCCEED)
+
+```bash
+curl -X POST http://127.0.0.1:8000/reservations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user123",
+    "room_id": "aurora",
+    "start_time": "2026-06-10T10:00:00+02:00",
+    "end_time": "2026-06-10T11:00:00+02:00"
+  }'
+```
+
+✅ Expected: `201 Created`
+
+---
+
+## ❌ 2️⃣ Reservation in next year (SHOULD FAIL)
+
+```bash
+curl -X POST http://127.0.0.1:8000/reservations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user123",
+    "room_id": "aurora",
+    "start_time": "2027-01-10T10:00:00+02:00",
+    "end_time": "2027-01-10T11:00:00+02:00"
+  }'
+```
+
+❌ Expected: `422 Unprocessable Entity`
+Message includes:
+
+```json
+"Reservations must be within the current year"
+```
+
+---
+
+## ❌ 3️⃣ Cross-year reservation (SHOULD FAIL)
+
+```bash
+curl -X POST http://127.0.0.1:8000/reservations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user123",
+    "room_id": "aurora",
+    "start_time": "2026-12-31T23:00:00+02:00",
+    "end_time": "2027-01-01T00:30:00+02:00"
+  }'
+```
+
+❌ Expected: `422 Unprocessable Entity`
+
+---
+
+## ❌ 4️⃣ Past date in same year (SHOULD FAIL)
+
+```bash
+curl -X POST http://127.0.0.1:8000/reservations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user123",
+    "room_id": "aurora",
+    "start_time": "2026-01-01T08:00:00+02:00",
+    "end_time": "2026-01-01T09:00:00+02:00"
+  }'
+```
+
+❌ Expected: `422 Unprocessable Entity`
+Message includes:
+
+```json
+"Reservations cannot be placed in the past."
+```
+
+---
+
+## 🔍 5️⃣ Show full validation error (debug)
+
+```bash
+curl -i -X POST http://127.0.0.1:8000/reservations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "debug",
+    "room_id": "aurora",
+    "start_time": "2027-05-01T10:00:00+02:00",
+    "end_time": "2027-05-01T11:00:00+02:00"
+  }'
+```
+
+Look for:
+
+```json
+"Reservations must be within the current year (2026)"
+```
+
+---
+
+## ✅ What these tests confirm
+
+✔ Current-year restriction
+✔ Past-date protection
+✔ Cross-year rejection
+✔ Validation errors surfaced as `422`
+
+---
+
+If you want next:
+
+* a **bash script** that runs all tests at once
+* dynamic year detection (`$(date +%Y)`)
+* pytest equivalents
+
+Just say the word.
+
+
+
