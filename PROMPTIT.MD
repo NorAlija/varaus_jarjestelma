@@ -601,3 +601,128 @@ If you want, I can next:
 * convert this into **pytest + httpx tests**
 
 Just say the word.
+
+## Human review with the help of AI
+
+1. **Nori(minä):** Should I use docstrings for classes to make comments more readable?
+
+**ChatGPT 5.2:**
+Yes — **absolutely yes**, and **classes are one of the *best* places to use docstrings** 👍
+In Python (and especially in FastAPI / Pydantic code), docstrings are the **preferred** way to explain intent.
+
+Let me be very concrete and practical.
+
+---
+
+## ✅ Where docstrings are appropriate (and expected)
+
+### 1️⃣ Classes (YES – recommended)
+
+Use docstrings to explain:
+
+* what the class represents
+* how it’s used
+* any important rules or constraints
+
+### 2️⃣ Functions / methods (YES)
+
+Explain:
+
+* what it does
+* important behavior or edge cases
+* what it returns or raises (briefly)
+
+### 3️⃣ Modules (optional but good)
+
+At the top of the file, explain what the module contains.
+
+---
+
+## ❌ Where docstrings are NOT useful
+
+* Every single line of code
+* Obvious one-liners (`return x`)
+* Variable assignments
+
+---
+
+## ✅ How to use docstrings in your code (examples)
+
+### Class docstring (Pydantic model)
+
+```python
+class ReservationCreateRequest(BaseModel):
+    """
+    Your comments...
+    """
+    user_id: str = Field(..., min_length=1, max_length=64)
+    room_id: str = Field(..., min_length=1, max_length=32)
+    start_time: datetime
+    end_time: datetime
+```
+
+✔ This is exactly what reviewers expect.
+
+---
+
+### Method docstring
+
+```python
+def overlaps(a_start: datetime, a_end: datetime, b_start: datetime, b_end: datetime) -> bool:
+    """
+    Your comments...
+    """
+    return a_start < b_end and a_end > b_start
+```
+
+✔ Explains the boundary behavior clearly.
+
+---
+
+### Route docstring (FastAPI-friendly)
+
+```python
+@app.post("/reservations", response_model=ReservationResponse, status_code=201)
+def create_reservation(req: ReservationCreateRequest) -> ReservationResponse:
+    """
+    Your comments...
+    """
+```
+
+✔ This shows up in Swagger UI (`/docs`) automatically.
+
+---
+
+## 🔍 Why docstrings are better than comments here
+
+| Docstrings                    | Inline comments  |
+| ----------------------------- | ---------------- |
+| Visible in docs               | Not visible      |
+| Standard Python practice      | Often noisy      |
+| Structured explanation        | Fragmented       |
+| Tool-friendly (Swagger, IDEs) | Ignored by tools |
+
+---
+
+## 🧠 Reviewer mindset (important)
+
+If I’m reviewing your code, I expect:
+
+* **Docstrings on classes and public functions**
+* Minimal inline comments
+* Comments only where logic is subtle or non-obvious
+
+Your current code is *correct*, but moving explanations into docstrings will:
+
+* improve readability
+* make it look more professional
+* reduce visual clutter
+
+---
+
+## ✅ Final rule of thumb
+
+> **Explain *why* with docstrings, not *what* with comments.**
+
+If you want, I can rewrite **one full section** of your file (models or routes) in “reviewer-perfect” style so you can copy the pattern for the rest.
+
