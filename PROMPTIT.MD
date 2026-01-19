@@ -1,3 +1,4 @@
+## First Prompt
 1. **Nori (minä):** You are an experienced programmer who considers security issues and produces efficient code. Your goal is to code a room booking API with python and as a framework you are expected to use FastAPI. Create commands for a virtual environment and also the command to install FastAPI. The required functionalities for this app are that a user can book a room for a specific time period, user can cancel reservation, user can list all reservations for a specific room, reservations can not overlap for example two people can not book the same room at the same time, reservations can not be placed in the past and the start time must be before the end time. The room amount in this task is 6 and the naming of the rooms is up to you. Provide the code for this.
 
 
@@ -232,7 +233,7 @@ If you want, I can also add:
 * a simple API key header check (basic auth layer),
 * pagination for the list endpoint.
 
-
+## Second Prompt
 2. **Nori (minä):** did you take security into consideration?
 
 **ChatGPT 5.2:**
@@ -424,6 +425,7 @@ If you want, next steps could be:
 
 Just tell me.
 
+## Third Prompt
 3. **Nori(minä):** Create the commands to test these endpoints. The testing of these endpoints will be done from Ubuntu terminal so use curl commands.
 
 **ChatGPT 5.2:**
